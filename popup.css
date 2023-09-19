@@ -1,0 +1,31 @@
+@font-face {
+    font-family: 'Comfortaa';
+    src: url('comfortaa.ttf');
+}
+
+h2 {
+    text-align: center;
+    margin-top: 0px;
+}
+
+body {
+    font-family: 'comfortaa', sans-serif;
+    background-color: #1a0025;
+    color: #ff5500;
+    padding: 10px;
+}
+
+
+button {
+    background-color: #003355;
+    color: #ff5500;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    flex: 1;
+    margin: 12.5px;
+}
+
+button:hover {
+    box-shadow: 0 0 15px #ff5500;
+}

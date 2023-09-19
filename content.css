@@ -1,0 +1,89 @@
+* {
+    font-family: 'comfortaa', sans-serif;
+    font-weight: bold !important;
+    font-size: 15px;
+}
+
+#ButtonsContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: -40px;
+}
+#ButtonsContainer .btn {
+    padding: 4px 6px;
+    font-size: 14px;
+    margin: 2.5px 0;
+}
+
+.mp-format{
+    font-size: 13.5px !important;
+}
+
+.personal-best {
+    font-size: 16px !important;
+}
+.personal-best img {
+margin-bottom: 2px;
+}
+
+.finished-track .personal-best {
+    color: red !important;
+
+}
+
+.authored-track .personal-best {
+    color: green !important;
+}
+
+
+
+.medals-div {
+    height: calc(100% - 6.5rem) !important;
+    width: calc(100% - 6.5rem) !important;
+    margin-bottom: 27.5%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.medals-div li {
+    font-size: 15px;
+    transform: translateY(7.5px);
+}
+.medals-div img {
+    width: 20px;
+    height: 20px;
+}
+
+.tm-map-score.personal-best {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 0rem;
+}
+.personal-best img {
+    width: 30px;
+    height: 20px;
+}
+
+
+
+.time-div {
+    margin-top: -6px;
+    font-size: 15px !important;
+}
+.percent-div {
+    white-space: nowrap;
+    margin-left: 71%;
+    margin-top: -6px;
+    font-size: 15px !important;
+}
+.finished-track .time-div , .finished-track .percent-div {
+    color: red !important;
+}
+.authored-track .time-div , .authored-track .percent-div {
+    color: green !important;
+}
+.unfinished-track .time-div , .unfinished-track .percent-div {
+    color: white !important;
+}
