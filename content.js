@@ -43,16 +43,8 @@ fetch(chrome.runtime.getURL("content.html"))
 
 
 
-// Define Tracks
-const OCtracks = $('.container.mt-5.d-block.d-xxl-none .col');
-$$(OCtracks);
-const COTDtracks = $('.container.my-2 .col.p-1');
-$$(COTDtracks);
-const ALLtracks = OCtracks.add(COTDtracks);
 
-let tracksProcessed = 0;  // Counter for number of tracks processed
-const totalTracks = ALLtracks.length;  // Total number of tracks to be processed
-let processingOriginals = true;  // Flag to determine if we are processing the original tracks
+
 
 const processTrackElement = function(trackElement) {
     const trackHref = trackElement.find('a').attr('href');
@@ -128,19 +120,35 @@ const processTrackElement = function(trackElement) {
             trackElement.addClass(trackType);
             $$$("Info Appended", trackType);
 
-            tracksProcessed++;  // Increment the counter for each processed track
-
-            // If all tracks have been processed and we are processing the original tracks
-            if (tracksProcessed === totalTracks && processingOriginals) {
+            // If we are processing the original tracks, clone them
+            if (processingOriginals) {
                 origTracksDIV = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').clone();
                 $$(`original tracks stored`);
             }
         });
 };
 
+
+// Define Tracks
+const OCtracks = $('.container.mt-5.d-block.d-xxl-none .col');
+$$(OCtracks);
+const COTDtracks = $('.container.my-2 .col.p-1');
+$$(COTDtracks);
+const ALLtracks = OCtracks.add(COTDtracks);
+
+const totalTracks = ALLtracks.length;  // Total number of tracks to be processed
+
+// Fetch Tracks on Page Load
 ALLtracks.each(function() {
     processTrackElement($(this));
 });
+// Proccess Default Tracks
+let processingOriginals = true;
+
+
+
+
+
 $$$$(); // Close Groupping after fetching all tracks
 $('body').on('click', '#allTracksBTN', function() {
     $(this).toggleClass('btn-primary btn-secondary');
