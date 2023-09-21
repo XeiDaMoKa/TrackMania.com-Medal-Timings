@@ -2,12 +2,8 @@
 
 
 // Custom Logs
-
-// $$ for Single Log
 const $$ = console.dir;
-// Create a Map to hold the arrays of content custom by title
 const groupMAP = new Map();
-// Keep track of the last group
 let groupLAST = null;
 
 const $$$ = function(title, content) {
@@ -16,11 +12,10 @@ const $$$ = function(title, content) {
         console.groupCollapsed(title);
         groupMAP.set(title, []);
     }
-// Map the Group and Log it
     groupMAP.get(title).push(content);
-    console.log(content);
+    console.dir(content);
 };
-// Function to close the last group
+
 const $$$$ = function() {
     if (groupLAST) {
         console.groupEnd();
@@ -31,21 +26,32 @@ const $$$$ = function() {
 
 
 
+
 // Append Buttons
 fetch(chrome.runtime.getURL("content.html"))
     .then(response => response.text())
     .then(content => {
         $('.tm-page-hero.container.py-3.py-lg-5').append(content);
         $$("Buttons Appended");
+        initiateTrackProcessing();
     });
 
 
+let processingOriginals = true;
+    // Find All Tracks
+    const ALLtracks = $('.flex-grow-1 .col');
+    $$$("Tracks Found", ALLtracks);
+    $$$$();
+    function initiateTrackProcessing() {
+    // Directly processing the tracks here
+    ALLtracks.each(function() {
+        processTrackElement($(this));
+    });
+}
 
 
 
-
-
-
+// Process Track Element Function
 const processTrackElement = function(trackElement) {
     const trackHref = trackElement.find('a').attr('href');
     $$$("Fetching Tracks", trackHref);
@@ -127,29 +133,12 @@ const processTrackElement = function(trackElement) {
             }
         });
 };
-
-
-// Define Tracks
-const OCtracks = $('.container.mt-5.d-block.d-xxl-none .col');
-$$(OCtracks);
-const COTDtracks = $('.container.my-2 .col.p-1');
-$$(COTDtracks);
-const ALLtracks = OCtracks.add(COTDtracks);
-
-const totalTracks = ALLtracks.length;  // Total number of tracks to be processed
-
-// Fetch Tracks on Page Load
-ALLtracks.each(function() {
-    processTrackElement($(this));
-});
-// Proccess Default Tracks
-let processingOriginals = true;
+$$$$();
 
 
 
 
 
-$$$$(); // Close Groupping after fetching all tracks
 $('body').on('click', '#allTracksBTN', function() {
     $(this).toggleClass('btn-primary btn-secondary');
     $$(`button class toggled`);
