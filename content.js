@@ -16,21 +16,32 @@ fetch(chrome.runtime.getURL("content.html"))
         $$("Buttons Appended");
     });
 
+const OCtracks = $('.container.mt-5.d-block.d-xxl-none .col');
+$$(OCtracks);
+const COTDtracks = $('.container.my-2 .col.p-1');
+$$(COTDtracks);
+const ALLtracks = OCtracks.add(COTDtracks);
+
+let tracksProcessed = 0;  // Counter for number of tracks processed
+const totalTracks = ALLtracks.length;  // Total number of tracks to be processed
+let processingOriginals = true;  // Flag to determine if we are processing the original tracks
+
 const processTrackElement = function(trackElement) {
     const trackHref = trackElement.find('a').attr('href');
     $$(`Fetching HREF`);
     fetch(trackHref)
         .then(response => response.text())
         .then(html => {
-            const trackPage = $(html);
-            const medalsList = trackPage.find('.list-unstyled.tm-map-score');
-            const medalsDiv = $('<div>', {
-                class: 'tm-map-card-official-footer medals-div'
-            });
-            medalsDiv.append(medalsList);
-            trackElement.find('a.tm-map-card-official-link img').after(medalsDiv);
-            const personalBest = trackPage.find('p.tm-map-score').addClass('personal-best');
-            trackElement.find('.tm-map-card-official-footer.d-flex.flex-column > div').eq(1).html(personalBest);
+                const trackPage = $(html);
+                const medalsList = trackPage.find('.list-unstyled.tm-map-score');
+                const medalsDiv = $('<div>', {
+                    class: 'tm-map-card-official-footer medals-div'
+                });
+                medalsDiv.append(medalsList);
+                trackElement.find('a.tm-map-card-official-link img').after(medalsDiv);
+                const personalBest = trackPage.find('p.tm-map-score').addClass('personal-best');
+                trackElement.find('.tm-map-card-official-footer.d-flex.flex-column > div').eq(1).html(personalBest);
+
             let timePB = personalBest.text().trim().split("\n").pop().trim();
             if (timePB === "--:--.---") {
                 timePB = "00:00.000";
@@ -88,27 +99,28 @@ const processTrackElement = function(trackElement) {
             const trackType = determineTrackType(timePB, rawTimeDiff);
             trackElement.addClass(trackType);
             $$(`Info Appended`);
+
+            tracksProcessed++;  // Increment the counter for each processed track
+
+            // If all tracks have been processed and we are processing the original tracks
+            if (tracksProcessed === totalTracks && processingOriginals) {
+                origTracksDIV = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').clone();
+                $$(`original tracks stored`);
+            }
         });
 };
-
-const OCtracks = $('.container.mt-5.d-block.d-xxl-none .col');
-$$(OCtracks);
-const COTDtracks = $('.container.my-2 .col.p-1');
-$$(COTDtracks);
-const ALLtracks = OCtracks.add(COTDtracks);
 
 ALLtracks.each(function() {
     processTrackElement($(this));
 });
 
-// Store the originals AFTER they have been processed
-const origTracksDIV = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').clone();
-$$(`original tracks stored`);
-
 $('body').on('click', '#allTracksBTN', function() {
     $(this).toggleClass('btn-primary btn-secondary');
     $$(`button class toggled`);
     if ($(this).hasClass('btn-secondary')) {
+        processingOriginals = false;  // Set the flag to false as we are fetching new tracks now
+
+
         $.get('https://www.trackmania.com/campaigns', function(data) {
             $$(`fetching`);
             const fetchedPage = $(data);
