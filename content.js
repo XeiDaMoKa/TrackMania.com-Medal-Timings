@@ -1,6 +1,6 @@
 
 
-
+// step 1
 // Custom Logs
 const $$ = console.dir;
 const groupMAP = new Map();
@@ -26,7 +26,7 @@ const $$$$ = function() {
 
 
 
-
+//Step 2
 // Append Buttons
 fetch(chrome.runtime.getURL("content.html"))
     .then(response => response.text())
@@ -35,8 +35,6 @@ fetch(chrome.runtime.getURL("content.html"))
         $$("Buttons Appended");
         initiateTrackProcessing();
     });
-
-
 let processingOriginals = true;
     // Find All Tracks
     const ALLtracks = $('.flex-grow-1 .col');
@@ -50,7 +48,7 @@ let processingOriginals = true;
 }
 
 
-
+// Step 3
 // Process Track Element Function
 const processTrackElement = function(trackElement) {
     const trackHref = trackElement.find('a').attr('href');
@@ -67,7 +65,6 @@ const processTrackElement = function(trackElement) {
                 trackElement.find('a.tm-map-card-official-link img').after(medalsDiv);
                 const personalBest = trackPage.find('p.tm-map-score').addClass('personal-best');
                 trackElement.find('.tm-map-card-official-footer.d-flex.flex-column > div').eq(1).html(personalBest);
-
             let timePB = personalBest.text().trim().split("\n").pop().trim();
             if (timePB === "--:--.---") {
                 timePB = "00:00.000";
@@ -138,7 +135,7 @@ $$$$();
 
 
 
-
+// Step 5
 $('body').on('click', '#allTracksBTN', function() {
     $(this).toggleClass('btn-primary btn-secondary');
     $$(`button class toggled`);
