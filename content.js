@@ -1,12 +1,35 @@
-const $$ = function(...args) {
-    for (let arg of args) {
-        if (arg instanceof jQuery) {
-            console.log(`${arg.length} Tracks Found`);
-        } else {
-            console.log(arg);
-        }
+
+
+
+// Custom Logs
+
+// $$ for Single Log
+const $$ = console.dir;
+// Create a Map to hold the arrays of content custom by title
+const groupMAP = new Map();
+// Keep track of the last group
+let groupLAST = null;
+
+const $$$ = function(title, content) {
+    groupLAST = title;
+    if (!groupMAP.has(title)) {
+        console.groupCollapsed(title);
+        groupMAP.set(title, []);
+    }
+// Map the Group and Log it
+    groupMAP.get(title).push(content);
+    console.log(content);
+};
+// Function to close the last group
+const $$$$ = function() {
+    if (groupLAST) {
+        console.groupEnd();
+        groupMAP.delete(groupLAST);
     }
 };
+
+
+
 
 // Append Buttons
 fetch(chrome.runtime.getURL("content.html"))
@@ -16,6 +39,11 @@ fetch(chrome.runtime.getURL("content.html"))
         $$("Buttons Appended");
     });
 
+
+
+
+
+// Define Tracks
 const OCtracks = $('.container.mt-5.d-block.d-xxl-none .col');
 $$(OCtracks);
 const COTDtracks = $('.container.my-2 .col.p-1');
@@ -28,7 +56,7 @@ let processingOriginals = true;  // Flag to determine if we are processing the o
 
 const processTrackElement = function(trackElement) {
     const trackHref = trackElement.find('a').attr('href');
-    $$(`Fetching HREF`);
+    $$$("Fetching Tracks", trackHref);
     fetch(trackHref)
         .then(response => response.text())
         .then(html => {
@@ -98,7 +126,7 @@ const processTrackElement = function(trackElement) {
             };
             const trackType = determineTrackType(timePB, rawTimeDiff);
             trackElement.addClass(trackType);
-            $$(`Info Appended`);
+            $$$("Info Appended", trackType);
 
             tracksProcessed++;  // Increment the counter for each processed track
 
@@ -113,7 +141,7 @@ const processTrackElement = function(trackElement) {
 ALLtracks.each(function() {
     processTrackElement($(this));
 });
-
+$$$$(); // Close Groupping after fetching all tracks
 $('body').on('click', '#allTracksBTN', function() {
     $(this).toggleClass('btn-primary btn-secondary');
     $$(`button class toggled`);
