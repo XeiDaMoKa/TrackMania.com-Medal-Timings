@@ -244,6 +244,11 @@ $('body').on('click', '#sortByTimeBTN', function() {
     } else {
         // Revert to the last state before sort
         trackContainer.html(lastStateBeforeSort);
+                // Untoggle Hide Unfinished and Hide Authored
+        $('#hideUnfinishedBTN').removeClass('btn-secondary').addClass('btn-primary');
+        $('#hideAuthoredBTN').removeClass('btn-secondary').addClass('btn-primary');
+        $('.unfinished-track').show();
+        $('.authored-track').show();
     }
 });
 
@@ -301,5 +306,10 @@ $('body').on('click', '#sortByPercentBTN', function() {
     } else {
         // Revert to the last state before sort
         trackContainer.html(lastStateBeforeSort);
+                // Untoggle Hide Unfinished and Hide Authored
+                $('#hideUnfinishedBTN').removeClass('btn-secondary').addClass('btn-primary');
+                $('#hideAuthoredBTN').removeClass('btn-secondary').addClass('btn-primary');
+                $('.unfinished-track').show();
+                $('.authored-track').show();
     }
 });
