@@ -24,6 +24,10 @@ fetch(chrome.runtime.getURL("content.html"))
     });
 }
 
+let sortByTime = false;
+let sortByPercent = false;
+let lastStateBeforeSort; // To store the last state before any sort
+
 
 // Step 3
 // Process Track Element Function
@@ -116,7 +120,7 @@ const fetchAndAppendTracks = (url) => {
             const fetchedPage = $(data);
             const fetchedTracks = fetchedPage.find('.col.p-1');
             // Append tracks to the existing div
-            $('#fetchedTracksContainer').append(fetchedTracks);
+            $('#fetchedTracksContainer').prepend(fetchedTracks);
             // Process each track
             fetchedTracks.each(function() {
                 processTrackElement($(this));
@@ -153,6 +157,149 @@ $('body').on('click', '#allTracksBTN', async function() {
         // Revert to original tracks
         $('#fetchedTracksContainer').replaceWith(origTracksDIV);
     }
+});
 
 
+// New Functionality: Event Listener for Hide Unfinished Tracks Button
+let hideUnfinished = false; // Flag to keep track of the toggle state
+
+$('body').on('click', '#hideUnfinishedBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    hideUnfinished = !hideUnfinished; // Toggle the state
+
+    // Toggle the visibility of tracks with the class 'unfinished-track'
+    if (hideUnfinished) {
+        $('.unfinished-track').hide();
+    } else {
+        $('.unfinished-track').show();
+    }
+});
+
+
+// New Functionality: Event Listener for Hide Authored Tracks Button
+let hideAuthored = false; // Flag to keep track of the toggle state
+
+$('body').on('click', '#hideAuthoredBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    hideAuthored = !hideAuthored; // Toggle the state
+
+    // Toggle the visibility of tracks with the class 'authored-track'
+    if (hideAuthored) {
+        $('.authored-track').hide();
+    } else {
+        $('.authored-track').show();
+    }
+});
+
+
+// Event Listener for Sort by Time Button
+$('body').on('click', '#sortByTimeBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    sortByTime = !sortByTime; // Toggle the state
+    sortByPercent = false; // Deactivate sort by percent
+    $('#sortByPercentBTN').addClass('btn-primary').removeClass('btn-secondary');
+
+    const trackContainer = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
+
+    if (sortByTime) {
+        lastStateBeforeSort = trackContainer.children().clone(); // Store the current state
+
+        // Sorting logic here for time-div
+        const sortedTracks = $('.col.p-1').sort(function(a, b) {
+            const trackA = $(a);
+            const trackB = $(b);
+
+            const timeStrA = trackA.find('.time-div').text().trim();
+            const timeStrB = trackB.find('.time-div').text().trim();
+
+            // Convert time strings to numerical values for comparison
+            const timeA = parseFloat(timeStrA.replace(/[^0-9.-]/g, '')) * (timeStrA.startsWith('-') ? 1 : -1);
+            const timeB = parseFloat(timeStrB.replace(/[^0-9.-]/g, '')) * (timeStrB.startsWith('-') ? 1 : -1);
+
+            if (trackA.hasClass('unfinished-track') && trackB.hasClass('unfinished-track')) {
+                return timeA - timeB; // Ascending in terms of arithmetic value, but effectively from most negative to least negative
+            }
+            if (trackA.hasClass('unfinished-track')) {
+                return -1;
+            }
+            if (trackB.hasClass('unfinished-track')) {
+                return 1;
+            }
+
+            if (trackA.hasClass('authored-track') && trackB.hasClass('authored-track')) {
+                return timeA - timeB; // Ascending
+            }
+            if (trackA.hasClass('authored-track')) {
+                return -1;
+            }
+            if (trackB.hasClass('authored-track')) {
+                return 1;
+            }
+
+            // For finished-track, which is the default case
+            return timeB - timeA; // Ascending
+        });
+
+        trackContainer.html(sortedTracks);
+    } else {
+        // Revert to the last state before sort
+        trackContainer.html(lastStateBeforeSort);
+    }
+});
+
+
+
+// Event Listener for Sort by Percent Button
+$('body').on('click', '#sortByPercentBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    sortByPercent = !sortByPercent;  // Toggle the state
+    sortByTime = false; // Deactivate sort by time
+    $('#sortByTimeBTN').addClass('btn-primary').removeClass('btn-secondary');
+
+    const trackContainer = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
+
+    if (sortByPercent) {
+        lastStateBeforeSort = trackContainer.children().clone(); // Store the current state
+
+        const sortedTracks = $('.col.p-1').sort(function(a, b) {
+            const trackA = $(a);
+            const trackB = $(b);
+
+            const percentA = parseFloat(trackA.find('.percent-div').text().replace('%', ''));
+            const percentB = parseFloat(trackB.find('.percent-div').text().replace('%', ''));
+
+            if (trackA.hasClass('unfinished-track') && trackB.hasClass('unfinished-track')) {
+                const timeStrA = trackA.find('.time-div').text().trim();
+                const timeStrB = trackB.find('.time-div').text().trim();
+                const timeA = parseFloat(timeStrA.replace(/[^0-9.-]/g, '')) * (timeStrA.startsWith('-') ? 1 : -1);
+                const timeB = parseFloat(timeStrB.replace(/[^0-9.-]/g, '')) * (timeStrB.startsWith('-') ? 1 : -1);
+                return timeA - timeB; // Ascending based on time
+            }
+
+            if (trackA.hasClass('unfinished-track')) {
+                return -1;
+            }
+            if (trackB.hasClass('unfinished-track')) {
+                return 1;
+            }
+
+            if (trackA.hasClass('authored-track') && trackB.hasClass('authored-track')) {
+                return percentB - percentA; // Reverse Ascending
+            }
+            if (trackA.hasClass('authored-track')) {
+                return -1;
+            }
+            if (trackB.hasClass('authored-track')) {
+                return 1;
+            }
+
+            // For finished-track, which is the default case
+            return percentB - percentA; // Reverse Ascending
+        });
+
+        trackContainer.html(sortedTracks);
+    } else {
+        // Revert to the last state before sort
+        trackContainer.html(lastStateBeforeSort);
+    }
 });
