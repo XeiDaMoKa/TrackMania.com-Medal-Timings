@@ -17,6 +17,55 @@
     margin: 2.5px 0;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+/* Style for the toggled state */
+#ButtonsContainer .btn.btn-secondary {
+    --bs-btn-bg: #066837 !important;
+    --bs-btn-focus-box-shadow: #84fbae !important;
+    background-color: #066837 !important; /* Your desired color for the toggled state */
+    border-color: #84fbae !important;
+
+}
+
+
+
+/* Loading */
+.spinner {
+    margin: 0 auto;
+    border: 15px solid #066837;
+    border-radius: 50%;
+    border-top: 10px solid #84fbae;
+    width: 75px;
+    height: 75px;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
 .mp-format{
     font-size: 13.5px !important;
 }

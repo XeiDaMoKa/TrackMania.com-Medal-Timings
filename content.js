@@ -3,26 +3,6 @@
 // step 1
 // Custom Logs
 const $$ = console.dir;
-const groupMAP = new Map();
-let groupLAST = null;
-
-const $$$ = function(title, content) {
-    groupLAST = title;
-    if (!groupMAP.has(title)) {
-        console.groupCollapsed(title);
-        groupMAP.set(title, []);
-    }
-    groupMAP.get(title).push(content);
-    console.dir(content);
-};
-
-const $$$$ = function() {
-    if (groupLAST) {
-        console.groupEnd();
-        groupMAP.delete(groupLAST);
-    }
-};
-
 
 
 
@@ -32,14 +12,11 @@ fetch(chrome.runtime.getURL("content.html"))
     .then(response => response.text())
     .then(content => {
         $('.tm-page-hero.container.py-3.py-lg-5').append(content);
-        $$("Buttons Appended");
         initiateTrackProcessing();
     });
-let processingOriginals = true;
+    let processingOriginals = true;
     // Find All Tracks
     const ALLtracks = $('.flex-grow-1 .col');
-    $$$("Tracks Found", ALLtracks);
-    $$$$();
     function initiateTrackProcessing() {
     // Directly processing the tracks here
     ALLtracks.each(function() {
@@ -52,7 +29,6 @@ let processingOriginals = true;
 // Process Track Element Function
 const processTrackElement = function(trackElement) {
     const trackHref = trackElement.find('a').attr('href');
-    $$$("Fetching Tracks", trackHref);
     fetch(trackHref)
         .then(response => response.text())
         .then(html => {
@@ -121,45 +97,62 @@ const processTrackElement = function(trackElement) {
             };
             const trackType = determineTrackType(timePB, rawTimeDiff);
             trackElement.addClass(trackType);
-            $$$("Info Appended", trackType);
-
             // If we are processing the original tracks, clone them
             if (processingOriginals) {
                 origTracksDIV = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').clone();
-                $$(`original tracks stored`);
             }
         });
 };
-$$$$();
+
 
 
 
 
 // Step 5
-$('body').on('click', '#allTracksBTN', function() {
-    $(this).toggleClass('btn-primary btn-secondary');
-    $$(`button class toggled`);
-    if ($(this).hasClass('btn-secondary')) {
-        processingOriginals = false;  // Set the flag to false as we are fetching new tracks now
-
-
-        $.get('https://www.trackmania.com/campaigns', function(data) {
-            $$(`fetching`);
+// New Function to Fetch and Append Tracks
+const fetchAndAppendTracks = (url) => {
+    return new Promise((resolve, reject) => {
+        $.get(url, function(data) {
             const fetchedPage = $(data);
             const fetchedTracks = fetchedPage.find('.col.p-1');
-            $$(`Fetched`);
-            const allTracksDIV = $('<div>', {
-                class: 'row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5',
-                id: 'fetchedTracksContainer'
-            }).append(fetchedTracks);
-            $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').replaceWith(allTracksDIV);
+            // Append tracks to the existing div
+            $('#fetchedTracksContainer').append(fetchedTracks);
+            // Process each track
             fetchedTracks.each(function() {
                 processTrackElement($(this));
             });
-            $$(`Old Tracks Replaced with New Tracks`);
+            // Check for a link to the previous season
+            const prevSeasonLink = fetchedPage.find('div.col-6.col-lg.order-2.order-lg-1.mt-3.mt-lg-0 a').attr('href');
+            if (prevSeasonLink) {
+                // Fetch and append those tracks too
+                fetchAndAppendTracks(prevSeasonLink).then(resolve).catch(reject);
+            } else {
+                // If no link is found, we are done
+                resolve();
+            }
         });
+    });
+};
+$('body').on('click', '#allTracksBTN', async function() {
+
+
+    $(this).toggleClass('btn-primary btn-secondary');
+    if ($(this).hasClass('btn-secondary')) {
+        processingOriginals = false;  // Set the flag to false as we are fetching new tracks now
+
+        // Your existing code to replace the original tracks container and fetch new tracks
+        const newTracksDiv = $('<div>', {
+            class: 'row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5',
+            id: 'fetchedTracksContainer'
+        });
+        $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').replaceWith(newTracksDiv);
+
+        // Fetch and append tracks to the new container
+        await fetchAndAppendTracks('https://www.trackmania.com/campaigns');
     } else {
+        // Revert to original tracks
         $('#fetchedTracksContainer').replaceWith(origTracksDIV);
-        $$(`Reverted to Original Tracks`);
     }
+
+
 });
