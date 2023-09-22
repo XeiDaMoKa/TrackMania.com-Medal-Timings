@@ -119,17 +119,30 @@ const processTrackElement = function(trackElement) {
 
 // Step 5
 // New Function to Fetch and Append Tracks
+// Modified fetchAndAppendTracks function
+let allProcessPromises = [];  // Array to hold all track processing promises
+
 const fetchAndAppendTracks = (url) => {
     return new Promise((resolve, reject) => {
         $.get(url, function(data) {
             const fetchedPage = $(data);
             const fetchedTracks = fetchedPage.find('.col.p-1');
-            // Append tracks to the existing div
-            $('#fetchedTracksContainer').prepend(fetchedTracks);
-            // Process each track
+
+            // Create a temporary div to hold the fetched tracks
+            const tempDiv = $('<div>');
+
+            // Add fetched tracks to temporary div
+            tempDiv.append(fetchedTracks);
+
+            // Process each track and then move it to the main container
             fetchedTracks.each(function() {
-                processTrackElement($(this));
+                const processPromise = processTrackElement($(this)).then(() => {
+                    // Move this track from the temporary div to the main container
+                    $('#fetchedTracksContainer').prepend($(this));
+                });
+                allProcessPromises.push(processPromise);
             });
+
             // Check for a link to the previous season
             const prevSeasonLink = fetchedPage.find('div.col-6.col-lg.order-2.order-lg-1.mt-3.mt-lg-0 a').attr('href');
             if (prevSeasonLink) {
@@ -142,6 +155,7 @@ const fetchAndAppendTracks = (url) => {
         });
     });
 };
+
 $('body').on('click', '#allTracksBTN', async function() {
     $(this).toggleClass('btn-primary btn-secondary');
 
@@ -161,14 +175,15 @@ $('body').on('click', '#allTracksBTN', async function() {
 
         // Fetch and append tracks to the new container
         await fetchAndAppendTracks('https://www.trackmania.com/campaigns');
-
+    // Wait for all track processing to complete
+    await Promise.all(allProcessPromises);
         // Hide spinner and show buttons
         $('.spinner').hide();
         $('#ButtonsContainer').show();
     } else {
         // Revert to original tracks
         $('#fetchedTracksContainer').replaceWith(origTracksDIV);
-        $('#ButtonsContainer').show();  // Show buttons without showing the spinner
+        $('#ButtonsContainer').show();
     }
 });
 
