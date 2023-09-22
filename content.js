@@ -1,10 +1,11 @@
-
-
 // step 1
 // Custom Logs
 const $$ = console.dir;
-
-
+const ALLtracks = $('.flex-grow-1 .col');
+let sortByTime = false;
+let sortByPercent = false;
+let lastStateBeforeSort; // To store the last state before any sort
+let processingOriginals = true;
 
 //Step 2
 // Append Buttons
@@ -12,26 +13,14 @@ fetch(chrome.runtime.getURL("content.html"))
     .then(response => response.text())
     .then(content => {
         $('.tm-page-hero.container.py-3.py-lg-5').append(content);
+        $('#ButtonsContainer').hide();
+        $('.spinner').show();
         initiateTrackProcessing();
     });
-    let processingOriginals = true;
-    // Find All Tracks
-    const ALLtracks = $('.flex-grow-1 .col');
-    function initiateTrackProcessing() {
-    // Directly processing the tracks here
-    ALLtracks.each(function() {
-        processTrackElement($(this));
-    });
-}
 
-let sortByTime = false;
-let sortByPercent = false;
-let lastStateBeforeSort; // To store the last state before any sort
-
-
-// Step 3
-// Process Track Element Function
 const processTrackElement = function(trackElement) {
+    return new Promise((resolve, reject) => {
+
     const trackHref = trackElement.find('a').attr('href');
     fetch(trackHref)
         .then(response => response.text())
@@ -45,11 +34,11 @@ const processTrackElement = function(trackElement) {
                 trackElement.find('a.tm-map-card-official-link img').after(medalsDiv);
                 const personalBest = trackPage.find('p.tm-map-score').addClass('personal-best');
                 trackElement.find('.tm-map-card-official-footer.d-flex.flex-column > div').eq(1).html(personalBest);
-            let timePB = personalBest.text().trim().split("\n").pop().trim();
+            let timePB = personalBest.text().trim().split("\\n").pop().trim();
             if (timePB === "--:--.---") {
                 timePB = "00:00.000";
             }
-            const authorTime = medalsList.find('li').first().text().trim().split("\n").pop().trim();
+            const authorTime = medalsList.find('li').first().text().trim().split("\\n").pop().trim();
             const solveTIME = (time1, time2) => {
                 const [minutes1, seconds1] = time1.split(':').map(parseFloat);
                 const [minutes2, seconds2] = time2.split(':').map(parseFloat);
@@ -101,16 +90,32 @@ const processTrackElement = function(trackElement) {
             };
             const trackType = determineTrackType(timePB, rawTimeDiff);
             trackElement.addClass(trackType);
+
             // If we are processing the original tracks, clone them
             if (processingOriginals) {
                 origTracksDIV = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').clone();
             }
+            resolve();
         });
+    });
 };
 
+    function initiateTrackProcessing() {
+        // An array to hold all the promises
+        const promises = [];
 
+        // Process each track element
+        ALLtracks.each(function(index, element) {
+            const promise = processTrackElement($(this));
+            promises.push(promise);
+        });
 
-
+        // Wait for all promises to resolve, then hide the spinner and show the buttons
+        Promise.all(promises).then(() => {
+            $('.spinner').hide();
+            $('#ButtonsContainer').show();
+        });
+    }
 
 // Step 5
 // New Function to Fetch and Append Tracks
@@ -138,11 +143,14 @@ const fetchAndAppendTracks = (url) => {
     });
 };
 $('body').on('click', '#allTracksBTN', async function() {
-
-
     $(this).toggleClass('btn-primary btn-secondary');
+
     if ($(this).hasClass('btn-secondary')) {
         processingOriginals = false;  // Set the flag to false as we are fetching new tracks now
+
+        // Show spinner
+        $('#ButtonsContainer').hide();
+        $('.spinner').show();
 
         // Your existing code to replace the original tracks container and fetch new tracks
         const newTracksDiv = $('<div>', {
@@ -153,11 +161,17 @@ $('body').on('click', '#allTracksBTN', async function() {
 
         // Fetch and append tracks to the new container
         await fetchAndAppendTracks('https://www.trackmania.com/campaigns');
+
+        // Hide spinner and show buttons
+        $('.spinner').hide();
+        $('#ButtonsContainer').show();
     } else {
         // Revert to original tracks
         $('#fetchedTracksContainer').replaceWith(origTracksDIV);
+        $('#ButtonsContainer').show();  // Show buttons without showing the spinner
     }
 });
+
 
 
 // New Functionality: Event Listener for Hide Unfinished Tracks Button
