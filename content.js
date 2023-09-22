@@ -122,23 +122,54 @@ const processTrackElement = function(trackElement) {
 // Modified fetchAndAppendTracks function
 let allProcessPromises = [];  // Array to hold all track processing promises
 
+const seasonOrder = ['Spring', 'Summer', 'Fall', 'Winter'];  // Adjust this to the actual season order
+
+const sortTracksByMPFormat = () => {
+    const trackContainer = $('#fetchedTracksContainer');
+    const sortedTracks = trackContainer.children('.col.p-1').sort(function(a, b) {
+        const trackA = $(a);
+        const trackB = $(b);
+
+        const mpFormatA = trackA.find('.tm-text-700.text-uppercase.tm-text-long span.mp-format').text();
+        const mpFormatB = trackB.find('.tm-text-700.text-uppercase.tm-text-long span.mp-format').text();
+
+        const [seasonA, yearA, trackNumberA] = mpFormatA.split(/[-\s]+/);
+        const [seasonB, yearB, trackNumberB] = mpFormatB.split(/[-\s]+/);
+
+        // Compare years
+        if (yearA !== yearB) {
+            return parseInt(yearA, 10) - parseInt(yearB, 10);
+        }
+
+        // Compare seasons within the same year
+        const seasonIndexA = seasonOrder.indexOf(seasonA);
+        const seasonIndexB = seasonOrder.indexOf(seasonB);
+        if (seasonIndexA !== seasonIndexB) {
+            return seasonIndexA - seasonIndexB;
+        }
+
+        // Compare track numbers within the same season and year
+        return parseInt(trackNumberA, 10) - parseInt(trackNumberB, 10);
+    });
+
+    trackContainer.html(sortedTracks);
+};
+
+
 const fetchAndAppendTracks = (url) => {
     return new Promise((resolve, reject) => {
         $.get(url, function(data) {
             const fetchedPage = $(data);
             const fetchedTracks = fetchedPage.find('.col.p-1');
 
-            // Create a temporary div to hold the fetched tracks
-            const tempDiv = $('<div>');
-
-            // Add fetched tracks to temporary div
-            tempDiv.append(fetchedTracks);
-
             // Process each track and then move it to the main container
             fetchedTracks.each(function() {
                 const processPromise = processTrackElement($(this)).then(() => {
                     // Move this track from the temporary div to the main container
                     $('#fetchedTracksContainer').prepend($(this));
+
+                    // Sort the tracks based on mp-format
+                    sortTracksByMPFormat();
                 });
                 allProcessPromises.push(processPromise);
             });
