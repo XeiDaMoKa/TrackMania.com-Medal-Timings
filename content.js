@@ -187,6 +187,8 @@ const fetchAndAppendTracks = (url) => {
     });
 };
 
+let fetchedTracksDIV;  // To store the fetched tracks
+
 $('body').on('click', '#allTracksBTN', async function() {
     $(this).toggleClass('btn-primary btn-secondary');
 
@@ -197,6 +199,10 @@ $('body').on('click', '#allTracksBTN', async function() {
         $('#ButtonsContainer').hide();
         $('.spinner').show();
 
+        if (fetchedTracksDIV) {
+            // If fetched tracks are saved, use them
+            $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').replaceWith(fetchedTracksDIV.clone());
+        } else {
         // Your existing code to replace the original tracks container and fetch new tracks
         const newTracksDiv = $('<div>', {
             class: 'row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5',
@@ -204,21 +210,47 @@ $('body').on('click', '#allTracksBTN', async function() {
         });
         $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').replaceWith(newTracksDiv);
 
-        // Fetch and append tracks to the new container
-        await fetchAndAppendTracks('https://www.trackmania.com/campaigns');
-    // Wait for all track processing to complete
-    await Promise.all(allProcessPromises);
+            // Fetch and append tracks to the new container
+            await fetchAndAppendTracks('https://www.trackmania.com/campaigns');
+            // Wait for all track processing to complete
+            await Promise.all(allProcessPromises);
+
+            // Save the fetched tracks
+            fetchedTracksDIV = $('#fetchedTracksContainer').clone();
+        }
+
         // Hide spinner and show buttons
         $('.spinner').hide();
+        // Untoggle all other buttons when allTracksBTN is toggled on
+        $('#dayTrackBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#sortByTimeBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#sortByPercentBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#hideUnfinishedBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#hideAuthoredBTN').addClass('btn-primary').removeClass('btn-secondary');
         $('#ButtonsContainer').show();
+        // Reset flags for other buttons
+        sortByTime = false;
+        sortByPercent = false;
+        hideUnfinished = false;
+        hideAuthored = false;
+
     } else {
         // Revert to original tracks
-        $('#fetchedTracksContainer').replaceWith(origTracksDIV);
+        $('#fetchedTracksContainer').replaceWith(origTracksDIV.clone());
+        // Untoggle all other buttons
+        $('#dayTrackBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#sortByTimeBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#sortByPercentBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#hideUnfinishedBTN').addClass('btn-primary').removeClass('btn-secondary');
+        $('#hideAuthoredBTN').addClass('btn-primary').removeClass('btn-secondary');
         $('#ButtonsContainer').show();
+        // Reset flags for other buttons
+        sortByTime = false;
+        sortByPercent = false;
+        hideUnfinished = false;
+        hideAuthored = false;
     }
 });
-
-
 
 // New Functionality: Event Listener for Hide Unfinished Tracks Button
 let hideUnfinished = false; // Flag to keep track of the toggle state
