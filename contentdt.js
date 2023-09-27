@@ -14,14 +14,25 @@ $('.container.mt-5.d-block.d-xxl-none').attr('style', 'display: block !important
 let sortByTime = false;  // Initialize at the top of your script
 let sortByPercent = false;  // Initialize at the top of your script
 let originalOrder = null; // To store the original order of tracks
+// Show the spinner and hide the buttons container
+function showSpinnerHideButtons() {
+    $('#ButtonsContainer').hide();
+    $('.spinner').show();
+  }
 
-// ... rest of your code
+  // Hide the spinner and show the buttons container
+  function hideSpinnerShowButtons() {
+    $('#ButtonsContainer').show();
+    $('.spinner').hide();
+  }
 
 // Rest of your initial code
 fetch(chrome.runtime.getURL("contentdt.html"))
+
     .then(response => response.text())
     .then(content => {
         $('.tm-page-hero.container.py-3.py-lg-5').append(content);
+
     });
 
 // Utility Functions
@@ -297,36 +308,45 @@ let originalContent = null;
 let isAllTracks = false;
 
 async function fetchAndPrependTracks(url = 'https://www.trackmania.com/track-of-the-day') {
-    try {
-        const response = await fetch(url);
-        const html = await response.text();
-        const parser = new DOMParser();
-        const fetchedDocument = parser.parseFromString(html, 'text/html');
-        const fetchedTrackContainer = fetchedDocument.querySelector('.container.mt-5.d-block.d-xxl-none');
-        const allFetchedCols = fetchedTrackContainer.querySelectorAll('.col');
-        const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
+    return new Promise(async (resolve, reject) => {
+        showSpinnerHideButtons(); // Show spinner when function is first called
+        try {
+            const response = await fetch(url);
+            const html = await response.text();
+            const parser = new DOMParser();
+            const fetchedDocument = parser.parseFromString(html, 'text/html');
+            const fetchedTrackContainer = fetchedDocument.querySelector('.container.mt-5.d-block.d-xxl-none');
+            const allFetchedCols = fetchedTrackContainer.querySelectorAll('.col');
+            const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
 
-        // Find the "Previous Month" button's URL for the next fetch.
-        const prevMonthButton = fetchedDocument.querySelector('div.col-6.col-lg.order-2.order-lg-1.mt-3.mt-lg-0 a.tm-page-hero-control');
+            const trackFetchPromises = [];
 
-        // If the "Previous Month" button exists and has an href, fetch and append those tracks too.
-        if (prevMonthButton && prevMonthButton.href) {
-            fetchAndPrependTracks(prevMonthButton.href);
-        }
-
-        for (const col of allFetchedCols) {
-            if (col.querySelector('a.tm-map-card-totd-link[href]')) {
-                // Prepend first
-                trackContainer.prepend(col);
-                const trackElement = $(col);
-
-                // Then fetch additional information
-                processToTDTrackElement(trackElement);
+            for (const col of allFetchedCols) {
+                if (col.querySelector('a.tm-map-card-totd-link[href]')) {
+                    trackContainer.prepend(col);
+                    const trackElement = $(col);
+                    trackFetchPromises.push(processToTDTrackElement(trackElement));
+                }
             }
+
+            await Promise.all(trackFetchPromises);
+
+            // Find the "Previous Month" button's URL for the next fetch.
+            const prevMonthButton = fetchedDocument.querySelector('div.col-6.col-lg.order-2.order-lg-1.mt-3.mt-lg-0 a.tm-page-hero-control');
+
+            // If the "Previous Month" button exists and has an href, fetch and append those tracks too.
+            if (prevMonthButton && prevMonthButton.href) {
+                await fetchAndPrependTracks(prevMonthButton.href);
+            }
+
+            resolve();
+        } catch (err) {
+            console.error("Fetch error:", err);
+            reject(err);
         }
-    } catch (err) {
-        console.error("Fetch error:", err);
-    }
+    }).finally(() => {
+        hideSpinnerShowButtons(); // Hide spinner once all fetching and processing are done
+    });
 }
 
 
@@ -359,4 +379,5 @@ if (!originalContent) {
         isAllTracks = true; // Toggle state
         fetchAndPrependTracks();
     }
+
 });
