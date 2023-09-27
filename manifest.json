@@ -29,14 +29,19 @@
     },
     "content_scripts": [
         {
-            "matches": ["https://www.trackmania.com/*"],
-            "js": ["jquery.js", "content.js"],
+            "matches": ["https://www.trackmania.com/campaigns*"],
+            "js": ["jquery.js", "contentct.js"],
+            "css": ["content.css"]
+        },
+        {
+            "matches": ["https://www.trackmania.com/track-of-the-day*"],
+            "js": ["jquery.js", "contentdt.js"],
             "css": ["content.css"]
         }
     ],
     "web_accessible_resources": [
         {
-          "resources": ["content.html", "comfortaa.ttf"],
+          "resources": ["contentct.html", "comfortaa.ttf"],
           "matches": ["https://www.trackmania.com/*"]
         }
     ]

@@ -20,7 +20,12 @@
 
 
 
-
+.tm-medal-progress span {
+    font-size: 22px !important;
+    font-weight: bolder !important;
+    color: #ffffff;
+    text-shadow: 0.5px 0.5px 0 #066837, -0.5px -0.5px 0 #066837, 0.5px -0.5px 0 #066837, -0.5px 0.5px 0 #066837;
+}
 
 
 

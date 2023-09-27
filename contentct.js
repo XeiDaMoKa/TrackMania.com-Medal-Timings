@@ -7,9 +7,10 @@ let sortByPercent = false;
 let lastStateBeforeSort; // To store the last state before any sort
 let processingOriginals = true;
 
+
 //Step 2
 // Append Buttons
-fetch(chrome.runtime.getURL("content.html"))
+fetch(chrome.runtime.getURL("contentct.html"))
     .then(response => response.text())
     .then(content => {
         $('.tm-page-hero.container.py-3.py-lg-5').append(content);
@@ -91,14 +92,40 @@ const processTrackElement = function(trackElement) {
             const trackType = determineTrackType(timePB, rawTimeDiff);
             trackElement.addClass(trackType);
 
+            // Update counters based on track type
+            totalTracks++;
+            if (trackType === 'authored-track') {
+                authoredTracks++;
+            } else if (trackType === 'unfinished-track') {
+                unfinishedTracks++;
+            }
             // If we are processing the original tracks, clone them
             if (processingOriginals) {
                 origTracksDIV = $('.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5').clone();
             }
+
             resolve();
         });
     });
 };
+
+function updateTrackCounts() {
+    // Count only tracks that are displayed (visible)
+    const totalTracks = $('.col.p-1:visible').length;
+
+    // Count only tracks that have the 'authored-track' class and are visible
+    const authoredTracks = $('.authored-track:visible').length;
+
+    // Always update the image
+    $('div.tm-medal-progress img').attr('src', '/build/images/Medals/Icon_128_Medal_Author.5f0fa372.png');
+
+    // Update the text inside the <span> element to say 'authored' instead of 'finished'
+    $('.tm-medal-progress span').text(`${authoredTracks}/${totalTracks} Authored Tracks`);
+}
+
+
+
+
 
     function initiateTrackProcessing() {
         // An array to hold all the promises
@@ -112,9 +139,13 @@ const processTrackElement = function(trackElement) {
 
         // Wait for all promises to resolve, then hide the spinner and show the buttons
         Promise.all(promises).then(() => {
+
+            updateTrackCounts();
+            sortTracksByMPFormat();
             $('.spinner').hide();
             $('#ButtonsContainer').show();
         });
+
     }
 
 // Step 5
@@ -155,7 +186,9 @@ const sortTracksByMPFormat = () => {
     trackContainer.html(sortedTracks);
 };
 
-
+let totalTracks = 0;
+let authoredTracks = 0;
+let unfinishedTracks = 0;
 const fetchAndAppendTracks = (url) => {
     return new Promise((resolve, reject) => {
         $.get(url, function(data) {
@@ -168,8 +201,6 @@ const fetchAndAppendTracks = (url) => {
                     // Move this track from the temporary div to the main container
                     $('#fetchedTracksContainer').prepend($(this));
 
-                    // Sort the tracks based on mp-format
-                    sortTracksByMPFormat();
                 });
                 allProcessPromises.push(processPromise);
             });
@@ -215,12 +246,16 @@ $('body').on('click', '#allTracksBTN', async function() {
             // Wait for all track processing to complete
             await Promise.all(allProcessPromises);
 
+            // Now sort the tracks
+            sortTracksByMPFormat();  // <-- Moved here
+
             // Save the fetched tracks
             fetchedTracksDIV = $('#fetchedTracksContainer').clone();
         }
 
         // Hide spinner and show buttons
         $('.spinner').hide();
+        updateTrackCounts();
         // Untoggle all other buttons when allTracksBTN is toggled on
         $('#dayTrackBTN').addClass('btn-primary').removeClass('btn-secondary');
         $('#sortByTimeBTN').addClass('btn-primary').removeClass('btn-secondary');
@@ -243,6 +278,8 @@ $('body').on('click', '#allTracksBTN', async function() {
         $('#sortByPercentBTN').addClass('btn-primary').removeClass('btn-secondary');
         $('#hideUnfinishedBTN').addClass('btn-primary').removeClass('btn-secondary');
         $('#hideAuthoredBTN').addClass('btn-primary').removeClass('btn-secondary');
+
+        updateTrackCounts();
         $('#ButtonsContainer').show();
         // Reset flags for other buttons
         sortByTime = false;
@@ -265,6 +302,7 @@ $('body').on('click', '#hideUnfinishedBTN', function() {
     } else {
         $('.unfinished-track').show();
     }
+    updateTrackCounts();
 });
 
 
@@ -281,6 +319,7 @@ $('body').on('click', '#hideAuthoredBTN', function() {
     } else {
         $('.authored-track').show();
     }
+    updateTrackCounts();
 });
 
 
