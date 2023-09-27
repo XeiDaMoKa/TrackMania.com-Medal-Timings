@@ -295,41 +295,41 @@ $('body').on('click', '#hideAuthoredBTN', function() {
 // Initialize variables at the top of your script
 let originalContent = null;
 let isAllTracks = false;
-function fetchAndPrependTracks() {
-    // Fetch HTML content from the Track of the Day page
-    fetch('https://www.trackmania.com/track-of-the-day')
-        .then(response => {
-            console.log("Fetch response:", response);
-            return response.text();
-        })
-        .then(html => {
-            const parser = new DOMParser();
-            const fetchedDocument = parser.parseFromString(html, 'text/html');
-            // Find the container where the tracks are located
-            const fetchedTrackContainer = fetchedDocument.querySelector('.container.mt-5.d-block.d-xxl-none');
-            // Find all .col elements within that container
-            const allFetchedCols = fetchedTrackContainer.querySelectorAll('.col');
-            // Filter out .col elements that do not have an href
-            const filteredCols = Array.from(allFetchedCols).filter(col => {
-                return col.querySelector('a.tm-map-card-totd-link[href]');
-            });
-            // Convert NodeList to jQuery objects and prepend them to the new div
-            const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
-            filteredCols.forEach(col => {
+
+async function fetchAndPrependTracks(url = 'https://www.trackmania.com/track-of-the-day') {
+    try {
+        const response = await fetch(url);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const fetchedDocument = parser.parseFromString(html, 'text/html');
+        const fetchedTrackContainer = fetchedDocument.querySelector('.container.mt-5.d-block.d-xxl-none');
+        const allFetchedCols = fetchedTrackContainer.querySelectorAll('.col');
+        const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
+
+        // Find the "Previous Month" button's URL for the next fetch.
+        const prevMonthButton = fetchedDocument.querySelector('div.col-6.col-lg.order-2.order-lg-1.mt-3.mt-lg-0 a.tm-page-hero-control');
+
+        // If the "Previous Month" button exists and has an href, fetch and append those tracks too.
+        if (prevMonthButton && prevMonthButton.href) {
+            fetchAndPrependTracks(prevMonthButton.href);
+        }
+
+        for (const col of allFetchedCols) {
+            if (col.querySelector('a.tm-map-card-totd-link[href]')) {
+                // Prepend first
                 trackContainer.prepend(col);
-            });
-            // Process each newly added track
-            $('.flex-grow-1 .col').each((index, element) => {
-                const trackElement = $(element);
-                processToTDTrackElement(trackElement).then(() => {
-                    // Callback after processing each track
-                });
-            });
-        })
-        .catch(err => {
-            console.error("Fetch error:", err);
-        });
+                const trackElement = $(col);
+
+                // Then fetch additional information
+                processToTDTrackElement(trackElement);
+            }
+        }
+    } catch (err) {
+        console.error("Fetch error:", err);
+    }
 }
+
+
 
 
 // Event Listener for "All Daily Tracks" Button
@@ -339,11 +339,10 @@ $('body').on('click', '#allTracksBTN', function() {
     const parentContainer = $('div.container.mt-5.d-block.d-xxl-none'); // Parent container
     const trackContainer = parentContainer.find('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
 
-if (!originalContent) {
-    originalContent = trackContainer.clone();  // Clone the original content
-    originalContent.find('.unreleased-track').remove();  // Remove unreleased tracks
-}
-
+    if (!originalContent) {
+        originalContent = trackContainer.clone();  // Clone the original content
+        originalContent.find('.unreleased-track').remove();  // Remove unreleased tracks
+    }
 
     $(this).toggleClass('btn-primary btn-secondary'); // Toggle button
 
@@ -352,10 +351,21 @@ if (!originalContent) {
         console.log("Reverting to daily tracks");
         trackContainer.replaceWith(originalContent.clone());  // Use a clone to keep the original intact
         isAllTracks = false; // Toggle state
+
+        // Reset other buttons and their states
+        $('#sortByTimeBTN, #sortByPercentBTN, #hideUnfinishedBTN, #hideAuthoredBTN')
+          .removeClass('btn-secondary')
+          .addClass('btn-primary');
+
+        sortByTime = false;
+        sortByPercent = false;
+        hideUnfinished = false;
+        hideAuthored = false;
+
     } else {
         // Replace with an empty div of the same class
         console.log("Replacing with an empty div");
-        trackContainer.replaceWith('<div class="row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5"></div>');
+        trackContainer.replaceWith('<div class="row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3.row-cols-lg-4.row-cols-xl-5"></div>');
         isAllTracks = true; // Toggle state
         fetchAndPrependTracks();
     }
