@@ -1,16 +1,21 @@
 // Custom Logs
 const $$ = console.log;
-const ALLtracks = $('.flex-grow-1 .col:visible');
+const ALLtracks = $('.flex-grow-1 .col');
 
 
 $('div.row.g-2.mb-2.row-cols-2.row-cols-sm-3.row-cols-md-4.row-cols-lg-5.row-cols-xl-6')
     .attr('class', 'row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5');
 
 // Hide the element with class 'container mt-5 d-none d-xxl-block'
-$('.container.mt-5.d-none.d-xxl-block').attr('style', 'display: none !important');
+$('.container.mt-5.d-none.d-xxl-block').remove();
 
 // Show the element with class 'container mt-5 d-block d-xxl-none'
 $('.container.mt-5.d-block.d-xxl-none').attr('style', 'display: block !important');
+let sortByTime = false;  // Initialize at the top of your script
+let sortByPercent = false;  // Initialize at the top of your script
+let originalOrder = null; // To store the original order of tracks
+
+// ... rest of your code
 
 // Rest of your initial code
 fetch(chrome.runtime.getURL("contentdt.html"))
@@ -36,11 +41,13 @@ const solveTIME = (timePB, authorTime) => {
     return { formatted: formattedTimeDiff, raw: rawTimeDiff };
 };
 
-const solvePERCENT = (rawTimeDiff, authorTime) => {
+const solvePERCENT = (rawTimeDiff, authorTime, useAbsolute = false) => {
     const [minAT, secAT] = authorTime.split(':').map(parseFloat);
     const timeATms = (minAT * 60 + secAT) * 1000;
-    return ((rawTimeDiff / timeATms) * 100).toFixed(2);
+    const effectiveRawTimeDiff = useAbsolute ? Math.abs(rawTimeDiff) : rawTimeDiff;
+    return ((effectiveRawTimeDiff / timeATms) * 100).toFixed(2);
 };
+
 
 const determineTrackType = (timePB, rawTimeDiff) => {
     if (timePB === "00:00.000") return "unfinished-track";
@@ -89,30 +96,37 @@ const processToTDTrackElement = function(trackElement) {
                 }
 
                 // Adding time and percent difference to the DOM
-                let displayTime = trackType === 'unfinished-track' ? authorTime : timeDifference;
-                const timeDiv = $('<div>', {
-                    class: 'tm-map-card-totd-header time-div',
-                    text: `${displayTime}`
-                });
-                trackElement.find('.tm-map-card-totd-header').replaceWith(timeDiv);
+// Adding time and percent difference to the DOM
+let displayTime = trackType === 'unfinished-track' ? authorTime : timeDifference;
+let percentDifference = solvePERCENT(rawTimeDiff, authorTime);
+let percentSymbol = '%';
 
-                let percentDifference = solvePERCENT(rawTimeDiff, authorTime);
-                let percentSymbol = '%';
+if (trackType === "unfinished-track") {
+    percentDifference = '-.--%';
+    percentSymbol = '';
+}
+else if (trackType === "authored-track") {
+    displayTime = `+${displayTime}`;
+    percentDifference = `+${Math.abs(percentDifference)}`;
+}
+else if (trackType === "finished-track") {
+    displayTime = `-${displayTime}`;
+    percentDifference = `-${Math.abs(percentDifference)}`;
+}
 
-                if (trackType === "unfinished-track") {
-                    percentDifference = '-.--%';
-                    percentSymbol = '';
-                }
+const timeDiv = $('<div>', {
+    class: 'tm-map-card-totd-header time-div',
+    text: `${displayTime}`
+});
+trackElement.find('.tm-map-card-totd-header').replaceWith(timeDiv);
 
-                const percentDiv = $('<div>', {
-                    class: 'tm-map-card-totd-header percent-div',
-                    text: `${percentDifference}${percentSymbol}`
-                });
-                percentDiv.insertAfter(trackElement.find('.tm-map-card-totd-header'));
-
+const percentDiv = $('<div>', {
+    class: 'tm-map-card-totd-header percent-div',
+    text: `${percentDifference}${percentSymbol}`
+});
+percentDiv.insertAfter(trackElement.find('.tm-map-card-totd-header'));
                 // Update the track type
                 trackElement.addClass(trackType);
-
                 resolve();
             });
     });
@@ -123,12 +137,151 @@ const processToTDTrackElement = function(trackElement) {
 ALLtracks.each((index, element) => {
     const trackElement = $(element);
     const trackHref = trackElement.find('a.tm-map-card-totd-link').attr('href');
-    $$("Track HREF:", trackHref);
 });
 
 $('.flex-grow-1 .col').each((index, element) => {
     const trackElement = $(element);
     processToTDTrackElement(trackElement).then(() => {
-        console.log('Processed ToTD track element');
     });
+});
+// Initialize variables to keep track of visibility
+let hideUnfinished = false;
+let hideAuthored = false;
+
+function checkAndUnhide() {
+    if (!sortByTime && !sortByPercent) {
+        // Unhide tracks if both sorting toggles are off
+        $('.col.unfinished-track, .col.authored-track').show();
+        $('#hideUnfinishedBTN, #hideAuthoredBTN').removeClass('btn-secondary').addClass('btn-primary');
+        hideUnfinished = false;
+        hideAuthored = false;
+    }
+}
+$('body').on('click', '#sortByTimeBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    sortByTime = !sortByTime;  // Toggle the state
+
+    const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5'); // Correct track container
+    $('.unreleased-track').remove();
+
+    if (sortByTime) {
+        if (!originalOrder) {
+            originalOrder = trackContainer.html(); // Save the original order
+
+
+    }
+        const sortedTracks = $('.col.finished-track, .col.authored-track, .col.unfinished-track').sort(function(a, b) {
+            const trackA = $(a);
+            const trackB = $(b);
+
+            const timeStrA = trackA.find('.time-div').text().trim();
+            const timeStrB = trackB.find('.time-div').text().trim();
+
+            const timeA = parseFloat(timeStrA.replace(/[^0-9.-]/g, ''));
+            const timeB = parseFloat(timeStrB.replace(/[^0-9.-]/g, ''));
+
+            // Custom sorting logic
+            const typeA = trackA.hasClass('unfinished-track') ? 0 : (trackA.hasClass('authored-track') ? 1 : 2);
+            const typeB = trackB.hasClass('unfinished-track') ? 0 : (trackB.hasClass('authored-track') ? 1 : 2);
+
+            if (typeA !== typeB) {
+                return typeA - typeB;
+            } else {
+                if (typeA === 0 || typeA === 1) {
+                    return timeB - timeA; // High to low
+                } else {
+                    return timeB - timeA; // Closest to zero to most negative
+                }
+            }
+        });
+    // Untoggle the Sort by Percent if it's active
+    if (sortByPercent) {
+        $('#sortByPercentBTN').toggleClass('btn-primary btn-secondary');
+        sortByPercent = false;
+    }
+        trackContainer.html(sortedTracks);
+    } else {
+        if (originalOrder) {
+            trackContainer.html(originalOrder);
+        }
+                checkAndUnhide();
+    }
+});
+
+
+
+
+// Event Listener for Sort by % Button
+$('body').on('click', '#sortByPercentBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    sortByPercent = !sortByPercent;  // Toggle the state
+
+    const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5'); // Correct track container
+    $('.unreleased-track').remove();
+
+    if (sortByPercent) {
+        const sortedTracks = $('.col.finished-track, .col.authored-track, .col.unfinished-track').sort(function(a, b) {
+            const percentStrA = $(a).find('.percent-div').text().trim();
+            const percentStrB = $(b).find('.percent-div').text().trim();
+            const timeStrA = $(a).find('.time-div').text().trim();
+            const timeStrB = $(b).find('.time-div').text().trim();
+
+            const percentA = parseFloat(percentStrA.replace(/[^0-9.-]/g, ''));
+            const percentB = parseFloat(percentStrB.replace(/[^0-9.-]/g, ''));
+            const timeA = parseFloat(timeStrA.replace(/[^0-9.-]/g, ''));
+            const timeB = parseFloat(timeStrB.replace(/[^0-9.-]/g, ''));
+
+            // Custom sorting logic
+            const typeA = $(a).hasClass('unfinished-track') ? 0 : ($(a).hasClass('authored-track') ? 1 : 2);
+            const typeB = $(b).hasClass('unfinished-track') ? 0 : ($(b).hasClass('authored-track') ? 1 : 2);
+
+            if (typeA !== typeB) {
+                return typeA - typeB;
+            } else {
+                if (typeA === 0) {
+                    return timeB - timeA;  // Unfinished sorted by time, high to low
+                } else if (typeA === 1) {
+                    return percentB - percentA;  // Authored high to low
+                } else {
+                    return percentB - percentA;  // Finished closest to zero to most negative
+                }
+            }
+        });
+    // Untoggle the Sort by Time if it's active
+    if (sortByTime) {
+        $('#sortByTimeBTN').toggleClass('btn-primary btn-secondary');
+        sortByTime = false;
+    }
+        trackContainer.html(sortedTracks);
+    } else {
+        if (originalOrder) {
+            trackContainer.html(originalOrder);
+        }
+        checkAndUnhide(); // Check and unhide tracks if needed
+    }
+});
+
+
+// Event Listener for Hide Unfinished Button
+$('body').on('click', '#hideUnfinishedBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    hideUnfinished = !hideUnfinished;
+
+    if (hideUnfinished) {
+        $('.col.unfinished-track').hide();
+    } else {
+        $('.col.unfinished-track').show();
+    }
+});
+
+// Event Listener for Hide Authored Button
+$('body').on('click', '#hideAuthoredBTN', function() {
+    $(this).toggleClass('btn-primary btn-secondary');
+    hideAuthored = !hideAuthored;
+
+    if (hideAuthored) {
+        $('.col.authored-track').hide();
+    } else {
+        $('.col.authored-track').show();
+    }
 });
