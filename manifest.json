@@ -41,7 +41,7 @@
     ],
     "web_accessible_resources": [
         {
-          "resources": ["contentct.html", "comfortaa.ttf"],
+          "resources": ["contentct.html", "contentdt.html", "comfortaa.ttf"],
           "matches": ["https://www.trackmania.com/*"]
         }
     ]
