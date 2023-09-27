@@ -339,10 +339,11 @@ $('body').on('click', '#allTracksBTN', function() {
     const parentContainer = $('div.container.mt-5.d-block.d-xxl-none'); // Parent container
     const trackContainer = parentContainer.find('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
 
-    if (!originalContent) {
-        originalContent = trackContainer.clone();  // Clone the original content
-        originalContent.find('.unreleased-track').remove();  // Remove unreleased tracks
-    }
+if (!originalContent) {
+    originalContent = trackContainer.clone();  // Clone the original content
+    originalContent.find('.unreleased-track').remove();  // Remove unreleased tracks
+}
+
 
     $(this).toggleClass('btn-primary btn-secondary'); // Toggle button
 
@@ -351,21 +352,10 @@ $('body').on('click', '#allTracksBTN', function() {
         console.log("Reverting to daily tracks");
         trackContainer.replaceWith(originalContent.clone());  // Use a clone to keep the original intact
         isAllTracks = false; // Toggle state
-
-        // Reset other buttons and their states
-        $('#sortByTimeBTN, #sortByPercentBTN, #hideUnfinishedBTN, #hideAuthoredBTN')
-          .removeClass('btn-secondary')
-          .addClass('btn-primary');
-
-        sortByTime = false;
-        sortByPercent = false;
-        hideUnfinished = false;
-        hideAuthored = false;
-
     } else {
         // Replace with an empty div of the same class
         console.log("Replacing with an empty div");
-        trackContainer.replaceWith('<div class="row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3.row-cols-lg-4.row-cols-xl-5"></div>');
+        trackContainer.replaceWith('<div class="row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5"></div>');
         isAllTracks = true; // Toggle state
         fetchAndPrependTracks();
     }
