@@ -47,14 +47,21 @@ const determineTrackType = (timePB, rawTimeDiff) => {
     if (rawTimeDiff > 0) return "finished-track";
     return "authored-track";
 };
+
 const processToTDTrackElement = function(trackElement) {
     return new Promise((resolve, reject) => {
         const trackHref = trackElement.find('a.tm-map-card-totd-link').attr('href');
+
         fetch(trackHref)
             .then(response => response.text())
             .then(html => {
                 const trackPage = $(html);
-
+        // Check if the track is unreleased (no href)
+        if (!trackHref) {
+            trackElement.addClass("unreleased-track");
+            resolve();
+            return;  // Exit the function early
+        }
                 // Fetching medals and appending them
                 const medalsList = trackPage.find('.list-unstyled.tm-map-score');
                 const medalsDiv = $('<div>', {
@@ -67,54 +74,51 @@ const processToTDTrackElement = function(trackElement) {
                 const personalBest = trackPage.find('p.tm-map-score').addClass('personal-best');
                 trackElement.find('.tm-text-long a').html(personalBest);
 
-        // Calculate time and percent difference
-        let timePB = personalBest.text().trim().split("\\n").pop().trim();
-        const authorTime = medalsList.find('li').first().text().trim().split("\\n").pop().trim();
+                // Calculate time and percent difference
+                let timePB = personalBest.text().trim().split("\\n").pop().trim();
+                const authorTime = medalsList.find('li').first().text().trim().split("\\n").pop().trim();
 
-        if (timePB === "--:--.---" || timePB === "00:00.000") {
-            timePB = authorTime; // Use author time if no PB
-        }
+                const { formatted: timeDifference, raw: rawTimeDiff } = solveTIME(timePB, authorTime);
 
-        const { formatted: timeDifference, raw: rawTimeDiff } = solveTIME(timePB, authorTime);
+                // Determine the track type
+                let trackType = determineTrackType(timePB, rawTimeDiff);
 
+                if (timePB === "--:--.---" || timePB === "00:00.000") {
+                    timePB = "00:00.000";  // Use placeholder if no PB
+                    trackType = "unfinished-track";
+                }
 
+                // Adding time and percent difference to the DOM
+                let displayTime = trackType === 'unfinished-track' ? authorTime : timeDifference;
                 const timeDiv = $('<div>', {
                     class: 'tm-map-card-totd-header time-div',
-                    text: `${timeDifference}`
+                    text: `${displayTime}`
                 });
                 trackElement.find('.tm-map-card-totd-header').replaceWith(timeDiv);
 
-                const percentDifference = solvePERCENT(rawTimeDiff, authorTime);
+                let percentDifference = solvePERCENT(rawTimeDiff, authorTime);
+                let percentSymbol = '%';
+
+                if (trackType === "unfinished-track") {
+                    percentDifference = '-.--%';
+                    percentSymbol = '';
+                }
+
                 const percentDiv = $('<div>', {
                     class: 'tm-map-card-totd-header percent-div',
-                    text: `${percentDifference}`
+                    text: `${percentDifference}${percentSymbol}`
                 });
                 percentDiv.insertAfter(trackElement.find('.tm-map-card-totd-header'));
 
-// Determine the type of track and set the appropriate classes and colors
-const determineTrackType = (timePB, rawTimeDiff) => {
-    if (timePB === "00:00.000") {
-        return 'unfinished-track';
-    } else if (rawTimeDiff > 0) {
-        return 'finished-track';
-    } else {
-        return 'authored-track';
-    }
-};
-
-const trackType = determineTrackType(timePB, rawTimeDiff);
-trackElement.addClass(trackType);
-
-// Now, adjust the time based on track type
-if (trackType === 'unfinished-track') {
-    timeDiv.text(authorTime); // Set the time to author time
-}
-
+                // Update the track type
+                trackElement.addClass(trackType);
 
                 resolve();
             });
     });
 };
+
+
 
 ALLtracks.each((index, element) => {
     const trackElement = $(element);

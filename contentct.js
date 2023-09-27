@@ -48,11 +48,15 @@ const processTrackElement = function(trackElement) {
                 const diffMinutes = Math.floor(absoluteDiffInSeconds / 60);
                 const diffSeconds = (absoluteDiffInSeconds % 60).toFixed(3);
                 let prefix = "";
-                if (rawDiffInSeconds > 0 || time1 === "00:00.000") {
+                if (timePB === "00:00.000") {
+                    prefix = "";  // No symbol for unfinished tracks
+                } else if (rawDiffInSeconds > 0) {
                     prefix = "-";
                 } else {
                     prefix = "+";
                 }
+
+
                 return {
                     formatted: `${prefix}${diffMinutes.toString().padStart(2, '0')}:${diffSeconds.padStart(6, '0')}`,
                     raw: rawDiffInSeconds
