@@ -285,3 +285,78 @@ $('body').on('click', '#hideAuthoredBTN', function() {
         $('.col.authored-track').show();
     }
 });
+
+
+
+
+
+
+
+// Initialize variables at the top of your script
+let originalContent = null;
+let isAllTracks = false;
+function fetchAndPrependTracks() {
+    // Fetch HTML content from the Track of the Day page
+    fetch('https://www.trackmania.com/track-of-the-day')
+        .then(response => {
+            console.log("Fetch response:", response);
+            return response.text();
+        })
+        .then(html => {
+            console.log("Fetched HTML:", html);
+            const parser = new DOMParser();
+            const fetchedDocument = parser.parseFromString(html, 'text/html');
+            console.log("Parsed document:", fetchedDocument);
+
+            // Find the container where the tracks are located
+            const fetchedTrackContainer = fetchedDocument.querySelector('.container.mt-5.d-block.d-xxl-none');
+
+            // Find all .col elements within that container
+            const allFetchedCols = fetchedTrackContainer.querySelectorAll('.col');
+
+            // Filter out .col elements that do not have an href
+            const filteredCols = Array.from(allFetchedCols).filter(col => {
+                return col.querySelector('a.tm-map-card-totd-link[href]');
+            });
+
+            console.log("Filtered tracks:", filteredCols);
+
+            // Convert NodeList to jQuery objects and prepend them to the new div
+            const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
+            filteredCols.forEach(col => {
+                trackContainer.prepend(col);
+            });
+        })
+        .catch(err => {
+            console.error("Fetch error:", err);
+        });
+}
+
+// Event Listener for "All Daily Tracks" Button
+$('body').on('click', '#allTracksBTN', function() {
+    console.log("Button clicked, current state of isAllTracks:", isAllTracks);
+
+    const parentContainer = $('div.container.mt-5.d-block.d-xxl-none'); // Parent container
+    const trackContainer = parentContainer.find('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
+
+if (!originalContent) {
+    originalContent = trackContainer.clone();  // Clone the original content
+    originalContent.find('.unreleased-track').remove();  // Remove unreleased tracks
+}
+
+
+    $(this).toggleClass('btn-primary btn-secondary'); // Toggle button
+
+    if (isAllTracks) {
+        // Revert to original daily tracks
+        console.log("Reverting to daily tracks");
+        trackContainer.replaceWith(originalContent.clone());  // Use a clone to keep the original intact
+        isAllTracks = false; // Toggle state
+    } else {
+        // Replace with an empty div of the same class
+        console.log("Replacing with an empty div");
+        trackContainer.replaceWith('<div class="row g-2 row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5"></div>');
+        isAllTracks = true; // Toggle state
+        fetchAndPrependTracks();
+    }
+});
