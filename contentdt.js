@@ -303,34 +303,34 @@ function fetchAndPrependTracks() {
             return response.text();
         })
         .then(html => {
-            console.log("Fetched HTML:", html);
             const parser = new DOMParser();
             const fetchedDocument = parser.parseFromString(html, 'text/html');
-            console.log("Parsed document:", fetchedDocument);
-
             // Find the container where the tracks are located
             const fetchedTrackContainer = fetchedDocument.querySelector('.container.mt-5.d-block.d-xxl-none');
-
             // Find all .col elements within that container
             const allFetchedCols = fetchedTrackContainer.querySelectorAll('.col');
-
             // Filter out .col elements that do not have an href
             const filteredCols = Array.from(allFetchedCols).filter(col => {
                 return col.querySelector('a.tm-map-card-totd-link[href]');
             });
-
-            console.log("Filtered tracks:", filteredCols);
-
             // Convert NodeList to jQuery objects and prepend them to the new div
             const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
             filteredCols.forEach(col => {
                 trackContainer.prepend(col);
+            });
+            // Process each newly added track
+            $('.flex-grow-1 .col').each((index, element) => {
+                const trackElement = $(element);
+                processToTDTrackElement(trackElement).then(() => {
+                    // Callback after processing each track
+                });
             });
         })
         .catch(err => {
             console.error("Fetch error:", err);
         });
 }
+
 
 // Event Listener for "All Daily Tracks" Button
 $('body').on('click', '#allTracksBTN', function() {
