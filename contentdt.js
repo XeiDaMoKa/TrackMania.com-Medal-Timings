@@ -152,9 +152,13 @@ ALLtracks.each((index, element) => {
 
 $('.flex-grow-1 .col').each((index, element) => {
     const trackElement = $(element);
-    processToTDTrackElement(trackElement).then(() => {
-    });
+    const trackHref = trackElement.find('a.tm-map-card-totd-link').attr('href');
+    if (trackHref) {  // Skip if no href
+        processToTDTrackElement(trackElement).then(() => {
+        });
+    }
 });
+
 // Initialize variables to keep track of visibility
 let hideUnfinished = false;
 let hideAuthored = false;
