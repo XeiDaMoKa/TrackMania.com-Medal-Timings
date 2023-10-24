@@ -312,46 +312,39 @@ let originalContent = null;
 let isAllTracks = false;
 
 async function fetchAndPrependTracks(url = 'https://www.trackmania.com/track-of-the-day') {
-    return new Promise(async (resolve, reject) => {
-        showSpinnerHideButtons(); // Show spinner when function is first called
-        try {
-            const response = await fetch(url);
+    showSpinnerHideButtons(); // Show spinner when function is first called
+
+    const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
+    let fetchNextURL = url;
+
+    const fetchAllTracksAndInfo = async () => {
+        while (fetchNextURL) {
+            const response = await fetch(fetchNextURL);
             const html = await response.text();
             const parser = new DOMParser();
             const fetchedDocument = parser.parseFromString(html, 'text/html');
             const fetchedTrackContainer = fetchedDocument.querySelector('.container.mt-5.d-block.d-xxl-none');
             const allFetchedCols = fetchedTrackContainer.querySelectorAll('.col');
-            const trackContainer = $('div.row.g-2.row-cols-2.row-cols-sm-2.row-cols-md-3.row-cols-lg-4.row-cols-xl-5');
 
-            const trackFetchPromises = [];
+            const prevMonthButton = fetchedDocument.querySelector('div.col-6.col-lg.order-2.order-lg-1.mt-3.mt-lg-0 a.tm-page-hero-control');
+            fetchNextURL = prevMonthButton ? prevMonthButton.href : null;
 
             for (const col of allFetchedCols) {
                 if (col.querySelector('a.tm-map-card-totd-link[href]')) {
-                    trackContainer.prepend(col);
                     const trackElement = $(col);
-                    trackFetchPromises.push(processToTDTrackElement(trackElement));
+                    processToTDTrackElement(trackElement).then(() => {
+                        trackContainer.prepend(trackElement);
+                    });
                 }
             }
-
-            await Promise.all(trackFetchPromises);
-
-            // Find the "Previous Month" button's URL for the next fetch.
-            const prevMonthButton = fetchedDocument.querySelector('div.col-6.col-lg.order-2.order-lg-1.mt-3.mt-lg-0 a.tm-page-hero-control');
-
-            // If the "Previous Month" button exists and has an href, fetch and append those tracks too.
-            if (prevMonthButton && prevMonthButton.href) {
-                await fetchAndPrependTracks(prevMonthButton.href);
-            }
-
-            resolve();
-        } catch (err) {
-            console.error("Fetch error:", err);
-            reject(err);
         }
-    }).finally(() => {
-        hideSpinnerShowButtons(); // Hide spinner once all fetching and processing are done
-    });
+    };
+
+    fetchAllTracksAndInfo()
+        .catch(err => console.error("Fetch error:", err))
+        .finally(() => hideSpinnerShowButtons());
 }
+
 
 
 
