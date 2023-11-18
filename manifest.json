@@ -24,9 +24,6 @@
     "host_permissions": [
         "https://www.trackmania.com/*"
     ],
-    "background": {
-        "service_worker": "background.js"
-    },
     "content_scripts": [
         {
             "matches": ["https://www.trackmania.com/campaigns*"],
